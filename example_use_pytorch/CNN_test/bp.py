@@ -225,8 +225,8 @@ for e in range(epoch):
     print ("val mse:{} val mae:{}".format(mse,mae))
 
 # 保存和加载
-joblib.dump(net,"bp_model.joblib")
-net=joblib.load("bp_model.joblib")
+# joblib.dump(net,"bp_model.joblib")
+# net=joblib.load("bp_model.joblib")
 
 # predict
 def pre(x):

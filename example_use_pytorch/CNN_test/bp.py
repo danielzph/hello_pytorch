@@ -27,7 +27,9 @@ y_train=y_train.values[:40]
 
 
 import numpy as np
-train=train[:,np.newaxis,:,:]
+# train=train[:,np.newaxis,:,:]       #分场合
+
+
 
 # 拆分数据集
 train_x,test_x,val_x = train[:20],train[20:30],train[30:40]
@@ -124,32 +126,33 @@ class CNN(nn.Module):
 
 
 class BiLSTM(nn.Module):
-    def __init__(self, in_channel=1, out_channel=10):
+    def __init__(self, in_channel=1, out_channel=6):
         super(BiLSTM, self).__init__()
-        self.hidden_dim = 64
-        self.kernel_num = 16
+        self.hidden_size = 64
+        self.input_size = 8
         self.num_layers = 2
-        self.V = 25
-        self.embed1 = nn.Sequential(
-            nn.Conv1d(in_channel, self.kernel_num, kernel_size=3, padding=1),
-            nn.BatchNorm1d(self.kernel_num),
-            nn.ReLU(inplace=True),
-            nn.MaxPool1d(kernel_size=2, stride=2))
-        self.embed2 = nn.Sequential(
-            nn.Conv1d(self.kernel_num, self.kernel_num*2, kernel_size=3, padding=1),
-            nn.BatchNorm1d(self.kernel_num*2),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveMaxPool1d(self.V))
-        self.hidden2label1 = nn.Sequential(nn.Linear(self.V * 2 * self.hidden_dim, self.hidden_dim * 4), nn.ReLU(), nn.Dropout())
-        self.hidden2label2 = nn.Linear(self.hidden_dim * 4, out_channel)
-        self.bilstm = nn.LSTM(self.kernel_num*2, self.hidden_dim,
+        self.V = 10
+        # self.embed1 = nn.Sequential(
+        #     nn.Conv1d(in_channel, self.kernel_num, kernel_size=3, padding=1),
+        #     nn.BatchNorm1d(self.kernel_num),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool1d(kernel_size=2, stride=2))
+        # self.embed2 = nn.Sequential(
+        #     nn.Conv1d(self.kernel_num, self.kernel_num*2, kernel_size=3, padding=1),
+        #     nn.BatchNorm1d(self.kernel_num*2),
+        #     nn.ReLU(inplace=True),
+        #     nn.AdaptiveMaxPool1d(self.V))
+        self.hidden2label1 = nn.Sequential(nn.Linear(self.V * 2 * self.hidden_size, self.hidden_size * 4), nn.ReLU(), nn.Dropout())
+        self.hidden2label2 = nn.Linear(self.hidden_size * 4, out_channel)
+        self.bilstm = nn.LSTM(self.input_size, self.hidden_size,
                               num_layers=self.num_layers, bidirectional=True,
                               batch_first=True, bias=False)
 
+
     def forward(self, x):
-        x = self.embed1(x)
-        x = self.embed2(x)
-        x = x.view(-1, self.kernel_num*2, self.V)
+        # x = self.embed1(x)
+        # x = self.embed2(x)
+        x = x.view(-1, self.input_size, self.V)
         x = torch.transpose(x, 1, 2)
         bilstm_out, _ = self.bilstm(x)
         bilstm_out = torch.tanh(bilstm_out)
@@ -160,7 +163,29 @@ class BiLSTM(nn.Module):
         return logit
 
 
+class BiLSTMNet(nn.Module):
 
+    def __init__(self, input_size):
+        super(BiLSTMNet, self).__init__()
+        self.rnn = nn.LSTM(
+            input_size=input_size,
+            hidden_size=64,
+            num_layers=3,
+            batch_first=True,
+            bidirectional=True,
+
+        )
+        self.out = nn.Sequential(
+            nn.Linear(128, 6)
+        )
+        self.h0 = torch.randn(2, 3, 20)
+        self.c0 = torch.randn(2, 3, 20)
+
+    def forward(self, x):
+        r_out, (h_n, h_c) = self.rnn(x.view(len(x), 1, -1),(self.h0, self.c0))  # None 表示 hidden state 会用全0的 state
+        out = self.out(r_out[:, -1])
+        print(out.shape)
+        return out
 
 
 
@@ -174,11 +199,16 @@ def ToVariable(x):
     tmp = torch.FloatTensor(x)
     return Variable(tmp)
 
+
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # net = test_BP()
 # net = ConvNet(num_output=6).to(device)
 # net = ConvNet(num_output=6)
-net = CNN(in_channel=1, out_channel=6)
+# net = CNN(in_channel=1, out_channel=6)
+net = BiLSTM(in_channel=1, out_channel=6)
+# net = BiLSTMNet(test_x.shape[-1])
+
+
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
 
@@ -186,7 +216,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
 
 # 训练
 epoch=500
-batchsize=1
+batchsize=2
 msel=[]
 mael=[]
 lossl=[]

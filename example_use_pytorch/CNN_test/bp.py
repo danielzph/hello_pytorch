@@ -142,11 +142,12 @@ class BiLSTM(nn.Module):
         #     nn.BatchNorm1d(self.kernel_num*2),
         #     nn.ReLU(inplace=True),
         #     nn.AdaptiveMaxPool1d(self.V))
-        self.hidden2label1 = nn.Sequential(nn.Linear(self.V * 2 * self.hidden_size, self.hidden_size * 4), nn.ReLU(), nn.Dropout())
-        self.hidden2label2 = nn.Linear(self.hidden_size * 4, out_channel)
         self.bilstm = nn.LSTM(self.input_size, self.hidden_size,
                               num_layers=self.num_layers, bidirectional=True,
                               batch_first=True, bias=False)
+        self.linear1 = nn.Sequential(nn.Linear(self.V * 2 * self.hidden_size, self.hidden_size * 4), nn.ReLU(),
+                                     nn.Dropout())
+        self.linear2 = nn.Linear(self.hidden_size * 4, out_channel)
 
 
     def forward(self, x):
@@ -157,8 +158,8 @@ class BiLSTM(nn.Module):
         bilstm_out, _ = self.bilstm(x)
         bilstm_out = torch.tanh(bilstm_out)
         bilstm_out = bilstm_out.view(bilstm_out.size(0), -1)
-        logit = self.hidden2label1(bilstm_out)
-        logit = self.hidden2label2(logit)
+        logit = self.linear1(bilstm_out)
+        logit = self.linear2(logit)
 
         return logit
 
@@ -190,6 +191,43 @@ class BiLSTMNet(nn.Module):
 
 
 
+class CNN1d_BiLSTM(nn.Module):
+    def __init__(self, in_channel=10, out_channel=6):
+        super(CNN1d_BiLSTM, self).__init__()
+        self.hidden_size = 64
+        self.input_size = 8
+        self.num_layers = 2
+        self.V = 10
+        self.embed1 = nn.Sequential(
+            nn.Conv1d(in_channel,out_channels=self.V , kernel_size=3, padding=1),
+            nn.BatchNorm1d(self.V),
+            nn.ReLU(inplace=True),
+            nn.MaxPool1d(kernel_size=2, stride=2))
+        # self.embed2 = nn.Sequential(
+        #     nn.Conv1d(self.kernel_num, self.kernel_num*2, kernel_size=3, padding=1),
+        #     nn.BatchNorm1d(self.kernel_num*2),
+        #     nn.ReLU(inplace=True),
+        #     nn.AdaptiveMaxPool1d(self.V))
+        self.bilstm = nn.LSTM(self.input_size, self.hidden_size,
+                              num_layers=self.num_layers, bidirectional=True,
+                              batch_first=True, bias=False)
+        self.linear1 = nn.Sequential(nn.Linear( 2 * self.hidden_size, self.hidden_size), nn.ReLU(),
+                                     nn.Dropout())
+        self.linear2 = nn.Linear(self.hidden_size, out_channel)
+
+
+    def forward(self, x):
+        x = self.embed1(x)
+        # x = self.embed2(x)
+        x = x.view(-1, self.input_size, self.V)
+        x = torch.transpose(x, 1, 2)
+        bilstm_out, _ = self.bilstm(x)
+        bilstm_out = torch.tanh(bilstm_out)
+        bilstm_out = bilstm_out.view(bilstm_out.size(0), -1)
+        logit = self.linear1(bilstm_out)
+        logit = self.linear2(logit)
+
+        return logit
 
 
 
@@ -205,8 +243,10 @@ def ToVariable(x):
 # net = ConvNet(num_output=6).to(device)
 # net = ConvNet(num_output=6)
 # net = CNN(in_channel=1, out_channel=6)
-net = BiLSTM(in_channel=1, out_channel=6)
-# net = BiLSTMNet(test_x.shape[-1])
+# net = BiLSTM(in_channel=1, out_channel=6)
+# net = BiLSTMNet(test_x.shape[-1])     # 这个还没写出来
+net = CNN1d_BiLSTM(in_channel=10, out_channel=6)     # 这个还没写出来
+
 
 
 criterion = nn.MSELoss()
@@ -216,7 +256,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
 
 # 训练
 epoch=500
-batchsize=2
+batchsize=1
 msel=[]
 mael=[]
 lossl=[]

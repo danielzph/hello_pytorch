@@ -157,7 +157,7 @@ class BiLSTM(nn.Module):
         x = torch.transpose(x, 1, 2)
         bilstm_out, _ = self.bilstm(x)
         bilstm_out = torch.tanh(bilstm_out)
-        bilstm_out = bilstm_out.view(bilstm_out.size(0), -1)
+        bilstm_out = bilstm_out.contiguous().view(bilstm_out.size(0), -1)
         logit = self.linear1(bilstm_out)
         logit = self.linear2(logit)
 
@@ -211,7 +211,7 @@ class CNN1d_BiLSTM(nn.Module):
         self.bilstm = nn.LSTM(self.input_size, self.hidden_size,
                               num_layers=self.num_layers, bidirectional=True,
                               batch_first=True, bias=False)
-        self.linear1 = nn.Sequential(nn.Linear( 2 * self.hidden_size, self.hidden_size), nn.ReLU(),
+        self.linear1 = nn.Sequential(nn.Linear(  2* self.hidden_size, self.hidden_size), nn.ReLU(),
                                      nn.Dropout())
         self.linear2 = nn.Linear(self.hidden_size, out_channel)
 
@@ -243,9 +243,9 @@ def ToVariable(x):
 # net = ConvNet(num_output=6).to(device)
 # net = ConvNet(num_output=6)
 # net = CNN(in_channel=1, out_channel=6)
-# net = BiLSTM(in_channel=1, out_channel=6)
+net = BiLSTM(in_channel=1, out_channel=6)
 # net = BiLSTMNet(test_x.shape[-1])     # 这个还没写出来
-net = CNN1d_BiLSTM(in_channel=10, out_channel=6)     # 这个还没写出来
+# net = CNN1d_BiLSTM(in_channel=10, out_channel=6)     # 这个还没写出来
 
 
 
@@ -256,7 +256,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
 
 # 训练
 epoch=500
-batchsize=1
+batchsize=2
 msel=[]
 mael=[]
 lossl=[]
@@ -350,5 +350,7 @@ plt.xlabel('epoch', fontsize=20)
 plt.ylabel('loss', fontsize=20)
 plt.legend(['loss','val_loss'], fontsize=20)
 plt.show()
+
+
 
 

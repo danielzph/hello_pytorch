@@ -11,14 +11,15 @@ from sklearn.metrics import explained_variance_score
 from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 
+
 # 读数据
-df=pd.read_csv("test.csv")
-train=df[df.columns[:8]]
-y_train=df[df.columns[8:15]]
+df=pd.read_csv("f_data05.csv")
+train=df[df.columns[5:14]]
+y_train=df[df.columns[18]]
 
 
-train=train.values.reshape(-1,10,8)
-y_train=y_train.values[:40]
+train=train.values.reshape(-1,22,9)
+y_train=y_train.values[:198]
 
 # print(train)
 #
@@ -27,17 +28,17 @@ y_train=y_train.values[:40]
 
 import numpy as np
 train=train[:,np.newaxis,:,:]       #分场合
-
+y_train=y_train[:,np.newaxis]
 
 
 # 拆分数据集
-train_x,test_x,val_x = train[:20],train[20:30],train[30:40]
-train_y,test_y,val_y=y_train[:20],y_train[20:30],y_train[30:40]
+train_x,test_x,val_x = train[:150],train[150:174],train[174:198]
+train_y,test_y,val_y=y_train[:150],y_train[150:174],y_train[174:198]
 
 
 # Convolutional neural network (two convolutional layers)
 class ConvNet(nn.Module):
-    def __init__(self, num_output=6):
+    def __init__(self, num_output=1):
         super(ConvNet, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Conv2d(1, 16, kernel_size=5, stride=1, padding=2),
@@ -49,7 +50,7 @@ class ConvNet(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
-        self.fc = nn.Linear(128, num_output)
+        self.fc = nn.Linear(320, num_output)
 
     def forward(self, x):
         out = self.layer1(x)
@@ -60,7 +61,7 @@ class ConvNet(nn.Module):
 
 import warnings
 class CNN(nn.Module):
-    def __init__(self, pretrained=False, in_channel=1, out_channel=6):
+    def __init__(self, pretrained=False, in_channel=1, out_channel=1):
         super(CNN, self).__init__()
         if pretrained == True:
             warnings.warn("Pretrained model is not available")
@@ -88,7 +89,7 @@ class CNN(nn.Module):
         #     nn.AdaptiveMaxPool2d((4,4)))  # 128, 4,4
 
         self.layer5 = nn.Sequential(
-            nn.Linear(192, 128),
+            nn.Linear(1664, 128),
             nn.ReLU(inplace=True),
             nn.Linear(128, 64),
             nn.ReLU(inplace=True))
@@ -113,20 +114,20 @@ def ToVariable(x):
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # net = test_BP()
 # net = ConvNet(num_output=6).to(device)
-net = ConvNet(num_output=6)
-# net = CNN(in_channel=1, out_channel=6)
+net = ConvNet(num_output=1)
+# net = CNN(in_channel=1, out_channel=1)
 
 
 
 
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.005, weight_decay=0.001)
 
 
 
 # 训练
-epoch=500
-batchsize=2
+epoch=200
+batchsize=10
 msel=[]
 mael=[]
 lossl=[]

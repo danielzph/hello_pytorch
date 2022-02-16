@@ -13,13 +13,13 @@ import matplotlib.pyplot as plt
 
 
 # 读数据
-df=pd.read_csv("test.csv")
-train=df[df.columns[:8]]
-y_train=df[df.columns[8:15]]
+df=pd.read_csv("f_data05.csv")
+train=df[df.columns[5:14]]
+y_train=df[df.columns[17]]
 
 
-train=train.values.reshape(-1,10,8)
-y_train=y_train.values[:40]
+train=train.values.reshape(-1,22,9)
+y_train=y_train.values[:198]
 
 # print(train)
 #
@@ -28,20 +28,22 @@ y_train=y_train.values[:40]
 
 import numpy as np
 # train=train[:,np.newaxis,:,:]       #分场合
-
+y_train=y_train[:,np.newaxis]
 
 
 # 拆分数据集
-train_x,test_x,val_x = train[:20],train[20:30],train[30:40]
-train_y,test_y,val_y=y_train[:20],y_train[20:30],y_train[30:40]
+# train_x,test_x,val_x = train[:70],train[70:85],train[85:99]
+# train_y,test_y,val_y=y_train[:70],y_train[70:85],y_train[85:99]
+train_x,Test_x, train_y,Test_y = train_test_split(train, y_train, test_size=2/9, random_state=10)
+val_x,test_x, val_y,test_y = train_test_split(Test_x, Test_y, test_size=0.5, random_state=10)
 
 class BiLSTM(nn.Module):
-    def __init__(self, in_channel=1, out_channel=6):
+    def __init__(self, in_channel=1, out_channel=1):
         super(BiLSTM, self).__init__()
         self.hidden_size = 64
-        self.input_size = 8
+        self.input_size = 9
         self.num_layers = 2
-        self.V = 10
+        self.V = 22
         # self.embed1 = nn.Sequential(
         #     nn.Conv1d(in_channel, self.kernel_num, kernel_size=3, padding=1),
         #     nn.BatchNorm1d(self.kernel_num),
@@ -80,19 +82,19 @@ def ToVariable(x):
 
 
 
-net = BiLSTM(in_channel=1, out_channel=6)
+net = BiLSTM(in_channel=1, out_channel=1)
 
 
 
 
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.05, weight_decay=0.001)
 
 
 
 # 训练
 epoch=500
-batchsize=2
+batchsize=10
 msel=[]
 mael=[]
 lossl=[]

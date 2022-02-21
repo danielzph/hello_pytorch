@@ -18,11 +18,11 @@ df=pd.read_csv("f_data06.csv")
 y_train=df[df.columns[18]]
 
 df2=pd.read_csv("../../data/shiyan/f_ae.csv")
-train=df2[df2.columns[0:5]]
+train=df2[df2.columns[0:14]]
 
 
 
-train=train.values.reshape(-1,3,5)
+train=train.values.reshape(-1,3,14)
 # train=train[:30]
 y_train=y_train.values[:198]
 
@@ -43,11 +43,12 @@ y_train=y_train[:,np.newaxis]
 train_x,Test_x, train_y,Test_y = train_test_split(train, y_train, test_size=2/9, random_state=2)
 val_x,test_x, val_y,test_y = train_test_split(Test_x, Test_y, test_size=0.5, random_state=2)
 
+
 class BiLSTM(nn.Module):
     def __init__(self, in_channel=1, out_channel=1):
         super(BiLSTM, self).__init__()
         self.hidden_size = 64
-        self.input_size = 5
+        self.input_size = 14
         self.num_layers = 2
         self.V = 3
         # self.embed1 = nn.Sequential(
@@ -89,7 +90,6 @@ def ToVariable(x):
 
 
 net = BiLSTM(in_channel=1, out_channel=1)
-
 
 
 
@@ -150,6 +150,7 @@ def pre(x):
     return out.detach().numpy()
 
 pre(test_x)
+
 
 # 回归模型评价
 var_x = ToVariable(test_x)

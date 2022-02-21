@@ -9,26 +9,28 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 
-df=pd.read_csv("../data/shiyan/210702-0937_Dist.csv")
-train=df[df.columns[1:2]]
+# df=pd.read_csv("../data/shiyan/tem02.csv")
+df=pd.read_csv("CNN_test/f_data06.csv")
+train=df[df.columns[13:14]]
 # train.values.reshape(-1,1)
-print(train)
+# print(train)
 train=np.array(train)
-print(train)
+train=train[:4356]
+# print(train)
 j=0
 tem=[]
-newtrain=[0]*7   # 7数出来的 后面要改
+newtrain=[0]*198   # 7数出来的 后面要改
 for i in range(len(train)):
     tem.append(train[i][0])
-    if (i+1)%100==0:
+    if (i+1)%22==0:
         newtrain[j]=tem
         j = j + 1
         tem=[]
-print(newtrain)
+# print(newtrain)
 
-train_x,test_x= train_test_split(newtrain, test_size=2/7, random_state=42)
-print(train_x)
-print(test_x)
+train_x,test_x= train_test_split(newtrain, test_size=1/9, random_state=2)
+# print(train_x)
+# print(test_x)
 
 
 
@@ -37,22 +39,22 @@ class AutoEncoder(nn.Module):
     def __init__(self):
         super(AutoEncoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(100, 64),
+            nn.Linear(22, 16),
             nn.Tanh(),
-            nn.Linear(64, 32),
+            nn.Linear(16, 8),
             nn.Tanh(),
-            nn.Linear(32, 16),
-            nn.Tanh(),
-            nn.Linear(16, 3)
+            # nn.Linear(32, 16),
+            # nn.Tanh(),
+            nn.Linear(8, 3)
         )
         self.decoder = nn.Sequential(
-            nn.Linear(3, 16),
+            nn.Linear(3, 8),
             nn.Tanh(),
-            nn.Linear(16, 32),
+            nn.Linear(8, 16),
             nn.Tanh(),
-            nn.Linear(32, 64),
-            nn.Tanh(),
-            nn.Linear(64, 100),
+            # nn.Linear(32, 64),
+            # nn.Tanh(),
+            nn.Linear(16, 22),
             nn.Sigmoid()
         )
 
@@ -62,20 +64,21 @@ class AutoEncoder(nn.Module):
         return encoded, decoded
 
 #参数设定
-epochs = 100
-BATCH_SIZE = 64
-LR = 0.005
+epochs = 2000
+BATCH_SIZE = 10
+LR = 0.0001
 
 # 数据类型转换
 trainData = torch.FloatTensor(train_x)
 testData = torch.FloatTensor(test_x)
-print(testData)
-print(testData)
+newtrain=torch.FloatTensor(newtrain)
+
+
 
 # 构建张量数据集
 train_dataset = TensorDataset(trainData, trainData)
 test_dataset = TensorDataset(testData, testData)
-trainDataLoader = DataLoader(dataset=train_dataset, batch_size=200, shuffle=True)
+trainDataLoader = DataLoader(dataset=train_dataset, batch_size=10, shuffle=True)
 
 # 初始化
 autoencoder = AutoEncoder()
@@ -110,10 +113,22 @@ ax.set_ylabel('Loss')
 plt.show()
 
 # 利用训练好的自编码器重构测试数据
-res, decodedTestdata = autoencoder(testData)
-print(res)
-# df=pd.DataFrame(res)
-# df.to_excel("make_xlsx.",header=True,index=False,encoding="utf-8")
+res, decodedTestdata = autoencoder(newtrain)
+# print(res)
+# print(res.shape)
+res=res.detach().numpy().tolist()
+# print(res)
+out=[]
+for n in range(0,len(res)):
+    for m in range(0,len(res[0])):
+        out.append(res[n][m])
+print(out)
+Out=[[0] for _ in range(len(out))]
+for l in range(0,len(out)):
+    Out[l][0]=out[l]
+
+df=pd.DataFrame(Out)
+df.to_excel("../data/shiyan/ae_z_i_14.xlsx",header=True,index=False,encoding="utf-8")
 
 
 
@@ -127,7 +142,7 @@ print(res)
 # for i in range(len(test_x)):
 #     ax = plt.subplot(3, 1, i + 1)
 #     ax.plot(test_x[:i], color='C0', linestyle='-', linewidth=2)
-#     ax.plot(reconstructedData[:, i], color='C3', linestyle='-', linewidth=2)
+#     # ax.plot(reconstructedData[:, i], color='C3', linestyle='-', linewidth=2)
 #     ax.legend(['Real value', 'Reconstructed value'], loc="upper right",
 #               edgecolor='black', fancybox=True)
 # plt.show()

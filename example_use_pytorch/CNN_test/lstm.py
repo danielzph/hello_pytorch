@@ -19,7 +19,8 @@ y_train=df[df.columns[18]]
 
 df2=pd.read_csv("../../data/shiyan/f_ae.csv")
 train=df2[df2.columns[0:5]]
-
+# df2=pd.read_csv("../../data/shiyan/f_ae02.csv")
+# train=df2[df2.columns[0:7]]
 
 
 train=train.values.reshape(-1,3,5)

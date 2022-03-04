@@ -10,7 +10,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import explained_variance_score
 from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
-
+from torch.nn import init
 
 
 # 读数据
@@ -193,6 +193,25 @@ class BiLSTMNet(nn.Module):
         return out
 
 
+class SE_Block(nn.Module):
+    def __init__(self, ch_in, reduction=2):
+        super(SE_Block, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # 全局自适应池化
+        self.fc = nn.Sequential(
+            nn.Linear(ch_in, ch_in // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(ch_in // reduction, ch_in, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)  # squeeze操作
+        y = self.fc(y).view(b, c, 1, 1)  # FC获取通道注意力权重，是具有全局信息的
+        return x * y.expand_as(x)  # 注意力作用每一个通道上
+
+
+
 
 
 class Covn2D_BiLSTM(nn.Module):
@@ -200,7 +219,7 @@ class Covn2D_BiLSTM(nn.Module):
         super(Covn2D_BiLSTM, self).__init__()
         self.hidden_dim = 16
         self.kernel_num = 8
-        self.num_layers = 2
+        self.num_layers = 1
         self.V = 5
         self.embed1 = nn.Sequential(
             nn.Conv2d(in_channel, self.kernel_num, kernel_size=3, padding=1),
@@ -213,21 +232,23 @@ class Covn2D_BiLSTM(nn.Module):
             nn.ReLU(inplace=True),
             # nn.AdaptiveMaxPool2d(self.V))
             nn.MaxPool2d(kernel_size=2, stride=2))
-        self.hidden2label1 = nn.Sequential(nn.Linear(3 *2 * self.hidden_dim, self.hidden_dim * 3),
+        self.hidden2label1 = nn.Sequential(nn.Linear(18 *2 * self.hidden_dim, self.hidden_dim * 3),
                                            nn.ReLU(),
                                            nn.Dropout())
         self.hidden2label2 = nn.Sequential(nn.Linear(self.hidden_dim * 3, self.hidden_dim * 1),
                                            nn.ReLU(),
                                            nn.Dropout())
         self.hidden2label3 = nn.Linear(self.hidden_dim , out_channel)
-        self.bilstm = nn.LSTM(self.kernel_num*2, self.hidden_dim,
+        self.bilstm = nn.LSTM(self.kernel_num, self.hidden_dim,
                               num_layers=self.num_layers, bidirectional=True,
                               batch_first=True, bias=False)
+        self.se1=SE_Block(8,reduction=4)
 
     def forward(self, x):
         x = self.embed1(x)
-        x = self.embed2(x)
-        x = x.view(-1, self.kernel_num*2, 3)
+        x = self.se1(x)
+        # x = self.embed2(x)
+        x = x.view(-1, self.kernel_num, 18)
         x = torch.transpose(x, 1, 2)
         bilstm_out, _ = self.bilstm(x)
         bilstm_out = torch.tanh(bilstm_out) #
@@ -259,7 +280,7 @@ net=Covn2D_BiLSTM(in_channel=1, out_channel=1)
 
 
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=0.005, weight_decay=0.001)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001)
 
 
 

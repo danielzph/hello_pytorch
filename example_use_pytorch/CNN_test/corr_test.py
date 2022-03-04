@@ -5,7 +5,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # 读数据
-df=pd.read_csv("f_data06.csv")
+df=pd.read_csv("corr_data03.csv")
+# df=pd.read_csv("f_data07.csv")
 
 # data_06=df[df.columns[5]]
 # data_06=data_06[:4356]
@@ -14,9 +15,10 @@ df=pd.read_csv("f_data06.csv")
 # result1 = np.corrcoef(data_06, data_07)
 # print(result1)
 
-data_f=df[df.columns[5:10]]
+data_f=df[df.columns[0:9]]
 data_f=data_f[:4356]
 result2 = data_f.corr()
+# result2=np.array(result2)
 print(result2)
 
 # 散点图

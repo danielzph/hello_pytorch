@@ -13,12 +13,12 @@ import matplotlib.pyplot as plt
 
 
 # 读数据
-df=pd.read_csv("f_data05.csv")
-train=df[df.columns[5:14]]
+df=pd.read_csv("f_data07.csv")
+train=df[df.columns[0:14]]
 y_train=df[df.columns[18]]
 
 
-train=train.values.reshape(-1,22,9)
+train=train.values.reshape(-1,22,14)
 y_train=y_train.values[:198]
 
 # print(train)
@@ -32,8 +32,28 @@ y_train=y_train[:,np.newaxis]
 
 
 # 拆分数据集
-train_x,test_x,val_x = train[:150],train[150:174],train[174:198]
-train_y,test_y,val_y=y_train[:150],y_train[150:174],y_train[174:198]
+# train_x,test_x,val_x = train[:150],train[150:174],train[174:198]
+# train_y,test_y,val_y=y_train[:150],y_train[150:174],y_train[174:198]
+train_x,Test_x, train_y,Test_y = train_test_split(train, y_train, test_size=2/9, random_state=2)
+val_x,test_x, val_y,test_y = train_test_split(Test_x, Test_y, test_size=0.5, random_state=2)
+
+
+
+# 交叉验证
+# train_x,test_x,val_x = train[:165],train[165:198],train[165:198]
+# train_y,test_y,val_y=y_train[:165],y_train[165:198],y_train[165:198]
+# train_x,test_x,val_x = train[33:198],train[0:33],train[0:33]
+# train_y,test_y,val_y=y_train[33:198],y_train[0:33],y_train[0:33]
+# train_x,test_x,val_x = np.append(train[0:33],train[66:198],axis=0),train[33:66],train[33:66]
+# train_y,test_y,val_y=np.append(y_train[0:33],y_train[66:198],axis=0),y_train[33:66],y_train[33:66]
+# train_x,test_x,val_x = np.append(train[0:66],train[99:198],axis=0),train[66:99],train[66:99]
+# train_y,test_y,val_y=np.append(y_train[0:66],y_train[99:198],axis=0),y_train[66:99],y_train[66:99]
+# train_x,test_x,val_x = np.append(train[0:99],train[132:198],axis=0),train[99:132],train[99:132]
+# train_y,test_y,val_y=np.append(y_train[0:99],y_train[132:198],axis=0),y_train[99:132],y_train[99:132]
+# train_x,test_x,val_x = np.append(train[0:132],train[165:198],axis=0),train[132:165],train[132:165]
+# train_y,test_y,val_y=np.append(y_train[0:132],y_train[165:198],axis=0),y_train[132:165],y_train[132:165]
+
+
 
 
 # Convolutional neural network (two convolutional layers)
@@ -41,27 +61,34 @@ class ConvNet(nn.Module):
     def __init__(self, num_output=1):
         super(ConvNet, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(1, 8, kernel_size=5, stride=1, padding=2),
+            nn.BatchNorm2d(8),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(16, 32, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(8, 16, kernel_size=5, stride=1, padding=2),
+            nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
-        self.fc = nn.Linear(320, num_output)
+        self.layer3 = nn.Sequential(
+            nn.Linear(240, 128),
+            nn.ReLU(inplace=True),
+            nn.Linear(128, 64),
+            nn.ReLU(inplace=True))
+        self.fc = nn.Linear(64, num_output)
 
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
         out = out.reshape(out.size(0), -1)
+        out = self.layer3(out)
         out = self.fc(out)
         return out
 
+
 import warnings
 class CNN(nn.Module):
-    def __init__(self, pretrained=False, in_channel=1, out_channel=1):
+    def __init__(self, pretrained=False, in_channel=1, out_channel=2):
         super(CNN, self).__init__()
         if pretrained == True:
             warnings.warn("Pretrained model is not available")
@@ -126,7 +153,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.005, weight_decay=0.001)
 
 
 # 训练
-epoch=200
+epoch=500
 batchsize=10
 msel=[]
 mael=[]

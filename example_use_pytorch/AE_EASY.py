@@ -10,12 +10,12 @@ from sklearn.model_selection import train_test_split
 
 
 # df=pd.read_csv("../data/shiyan/tem02.csv")
-df=pd.read_csv("CNN_test/f_data06.csv")
+df=pd.read_csv("../example_use_pytorch/CNN_test/f_data07.csv")
 train=df[df.columns[13:14]]
 # train.values.reshape(-1,1)
 # print(train)
 train=np.array(train)
-train=train[:4356]
+# train=train[:4356]
 # print(train)
 j=0
 tem=[]
@@ -41,17 +41,17 @@ class AutoEncoder(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(22, 16),
             nn.Tanh(),
-            nn.Linear(16, 8),
-            nn.Tanh(),
+            # nn.Linear(16, 8),
+            # nn.Tanh(),
             # nn.Linear(32, 16),
             # nn.Tanh(),
-            nn.Linear(8, 3)
+            nn.Linear(16, 12)
         )
         self.decoder = nn.Sequential(
-            nn.Linear(3, 8),
+            nn.Linear(12, 16),
             nn.Tanh(),
-            nn.Linear(8, 16),
-            nn.Tanh(),
+            # nn.Linear(8, 16),
+            # nn.Tanh(),
             # nn.Linear(32, 64),
             # nn.Tanh(),
             nn.Linear(16, 22),
@@ -128,7 +128,7 @@ for l in range(0,len(out)):
     Out[l][0]=out[l]
 
 df=pd.DataFrame(Out)
-df.to_excel("../data/shiyan/ae_z_i_14.xlsx",header=True,index=False,encoding="utf-8")
+df.to_excel("../data/shiyan/ae_z_I14_22-12.xlsx",header=True,index=False,encoding="utf-8")
 
 
 

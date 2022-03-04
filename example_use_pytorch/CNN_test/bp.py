@@ -12,14 +12,18 @@ from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 
 
+
 # 读数据
-df=pd.read_csv("test.csv")
-train=df[df.columns[:8]]
-y_train=df[df.columns[8:15]]
+df=pd.read_csv("f_data07.csv")
+# train=df[df.columns[0:14]]
+y_train=df[df.columns[18]]
 
 
-train=train.values.reshape(-1,10,8)
-y_train=y_train.values[:40]
+df2=pd.read_csv("../../data/shiyan/f_ae02.csv")
+train=df2[df2.columns[0:7]]
+
+train=train.values.reshape(-1,12,7)
+y_train=y_train.values[:198]
 
 # print(train)
 #
@@ -27,13 +31,13 @@ y_train=y_train.values[:40]
 
 
 import numpy as np
-# train=train[:,np.newaxis,:,:]       #分场合
-
+train=train[:,np.newaxis,:,:]       #分场合
+y_train=y_train[:,np.newaxis]
 
 
 # 拆分数据集
-train_x,test_x,val_x = train[:20],train[20:30],train[30:40]
-train_y,test_y,val_y=y_train[:20],y_train[20:30],y_train[30:40]
+train_x,Test_x, train_y,Test_y = train_test_split(train, y_train, test_size=2/9, random_state=2)
+val_x,test_x, val_y,test_y = train_test_split(Test_x, Test_y, test_size=0.5, random_state=2)
 
 
 
@@ -191,41 +195,46 @@ class BiLSTMNet(nn.Module):
 
 
 
-class CNN1d_BiLSTM(nn.Module):
-    def __init__(self, in_channel=10, out_channel=6):
-        super(CNN1d_BiLSTM, self).__init__()
-        self.hidden_size = 64
-        self.input_size = 8
+class Covn2D_BiLSTM(nn.Module):
+    def __init__(self, in_channel=1, out_channel=1):
+        super(Covn2D_BiLSTM, self).__init__()
+        self.hidden_dim = 16
+        self.kernel_num = 8
         self.num_layers = 2
-        self.V = 10
+        self.V = 5
         self.embed1 = nn.Sequential(
-            nn.Conv1d(in_channel,out_channels=self.V , kernel_size=3, padding=1),
-            nn.BatchNorm1d(self.V),
+            nn.Conv2d(in_channel, self.kernel_num, kernel_size=3, padding=1),
+            nn.BatchNorm2d(self.kernel_num),
             nn.ReLU(inplace=True),
-            nn.MaxPool1d(kernel_size=2, stride=2))
-        # self.embed2 = nn.Sequential(
-        #     nn.Conv1d(self.kernel_num, self.kernel_num*2, kernel_size=3, padding=1),
-        #     nn.BatchNorm1d(self.kernel_num*2),
-        #     nn.ReLU(inplace=True),
-        #     nn.AdaptiveMaxPool1d(self.V))
-        self.bilstm = nn.LSTM(self.input_size, self.hidden_size,
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.embed2 = nn.Sequential(
+            nn.Conv2d(self.kernel_num, self.kernel_num*2, kernel_size=3, padding=1),
+            nn.BatchNorm2d(self.kernel_num*2),
+            nn.ReLU(inplace=True),
+            # nn.AdaptiveMaxPool2d(self.V))
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.hidden2label1 = nn.Sequential(nn.Linear(3 *2 * self.hidden_dim, self.hidden_dim * 3),
+                                           nn.ReLU(),
+                                           nn.Dropout())
+        self.hidden2label2 = nn.Sequential(nn.Linear(self.hidden_dim * 3, self.hidden_dim * 1),
+                                           nn.ReLU(),
+                                           nn.Dropout())
+        self.hidden2label3 = nn.Linear(self.hidden_dim , out_channel)
+        self.bilstm = nn.LSTM(self.kernel_num*2, self.hidden_dim,
                               num_layers=self.num_layers, bidirectional=True,
                               batch_first=True, bias=False)
-        self.linear1 = nn.Sequential(nn.Linear(  2* self.hidden_size, self.hidden_size), nn.ReLU(),
-                                     nn.Dropout())
-        self.linear2 = nn.Linear(self.hidden_size, out_channel)
-
 
     def forward(self, x):
         x = self.embed1(x)
-        # x = self.embed2(x)
-        x = x.view(-1, self.input_size, self.V)
+        x = self.embed2(x)
+        x = x.view(-1, self.kernel_num*2, 3)
         x = torch.transpose(x, 1, 2)
         bilstm_out, _ = self.bilstm(x)
-        bilstm_out = torch.tanh(bilstm_out)
+        bilstm_out = torch.tanh(bilstm_out) #
         bilstm_out = bilstm_out.view(bilstm_out.size(0), -1)
-        logit = self.linear1(bilstm_out)
-        logit = self.linear2(logit)
+        logit = self.hidden2label1(bilstm_out)
+        logit = self.hidden2label2(logit)
+        logit = self.hidden2label3(logit)
 
         return logit
 
@@ -243,20 +252,20 @@ def ToVariable(x):
 # net = ConvNet(num_output=6).to(device)
 # net = ConvNet(num_output=6)
 # net = CNN(in_channel=1, out_channel=6)
-net = BiLSTM(in_channel=1, out_channel=6)
+# net = BiLSTM(in_channel=1, out_channel=6)
 # net = BiLSTMNet(test_x.shape[-1])     # 这个还没写出来
-# net = CNN1d_BiLSTM(in_channel=10, out_channel=6)     # 这个还没写出来
+net=Covn2D_BiLSTM(in_channel=1, out_channel=1)
 
 
 
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.005, weight_decay=0.001)
 
 
 
 # 训练
 epoch=500
-batchsize=2
+batchsize=4
 msel=[]
 mael=[]
 lossl=[]
@@ -345,7 +354,7 @@ plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.plot(range(len(lossl)), lossl,c='green')
 plt.plot(range(len(vallossl)), vallossl,c='red')
-plt.title("each eooch loss", fontsize=20)
+plt.title("each epoch loss", fontsize=20)
 plt.xlabel('epoch', fontsize=20)
 plt.ylabel('loss', fontsize=20)
 plt.legend(['loss','val_loss'], fontsize=20)

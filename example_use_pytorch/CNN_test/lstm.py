@@ -72,7 +72,7 @@ class BiLSTM(nn.Module):
     def forward(self, x):
         # x = self.embed1(x)
         # x = self.embed2(x)
-        x = x.view(-1, self.input_size, self.V)
+        x = x.reshape(-1, self.input_size, self.V)
         x = torch.transpose(x, 1, 2)
         bilstm_out, _ = self.bilstm(x)
         bilstm_out = torch.tanh(bilstm_out)
@@ -101,7 +101,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.002, weight_decay=0.0001)
 
 # 训练
 epoch=500
-batchsize=10
+batchsize=6
 msel=[]
 mael=[]
 lossl=[]

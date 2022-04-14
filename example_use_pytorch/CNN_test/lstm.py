@@ -13,17 +13,17 @@ import matplotlib.pyplot as plt
 
 
 # 读数据
-df=pd.read_csv("f_data06.csv")
-# train=df[df.columns[0:5]]
+df=pd.read_csv("f_data07.csv")
+train=df[df.columns[0:14]]
 y_train=df[df.columns[18]]
 
-df2=pd.read_csv("../../data/shiyan/f_ae.csv")
-train=df2[df2.columns[0:5]]
-# df2=pd.read_csv("../../data/shiyan/f_ae02.csv")
-# train=df2[df2.columns[0:7]]
+# df2=pd.read_csv("../../data/shiyan/f_ae.csv")
+# train=df2[df2.columns[0:5]]
+# # df2=pd.read_csv("../../data/shiyan/f_ae02.csv")
+# # train=df2[df2.columns[0:7]]
 
 
-train=train.values.reshape(-1,3,5)
+train=train.values.reshape(-1,22,14)
 # train=train[:30]
 y_train=y_train.values[:198]
 
@@ -48,9 +48,9 @@ class BiLSTM(nn.Module):
     def __init__(self, in_channel=1, out_channel=1):
         super(BiLSTM, self).__init__()
         self.hidden_size = 64
-        self.input_size = 5
+        self.input_size = 14
         self.num_layers = 2
-        self.V = 3
+        self.V = 22
         # self.embed1 = nn.Sequential(
         #     nn.Conv1d(in_channel, self.kernel_num, kernel_size=3, padding=1),
         #     nn.BatchNorm1d(self.kernel_num),

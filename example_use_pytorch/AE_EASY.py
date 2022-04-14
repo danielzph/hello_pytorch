@@ -64,7 +64,7 @@ class AutoEncoder(nn.Module):
         return encoded, decoded
 
 #参数设定
-epochs = 2000
+epochs = 500
 BATCH_SIZE = 10
 LR = 0.0001
 
@@ -79,12 +79,14 @@ newtrain=torch.FloatTensor(newtrain)
 train_dataset = TensorDataset(trainData, trainData)
 test_dataset = TensorDataset(testData, testData)
 trainDataLoader = DataLoader(dataset=train_dataset, batch_size=10, shuffle=True)
+testDataLoader = DataLoader(dataset=test_dataset, batch_size=10, shuffle=True)
 
 # 初始化
 autoencoder = AutoEncoder()
 optimizer = optim.Adam(autoencoder.parameters(), lr=1e-3)
 loss_func = nn.MSELoss()
 loss_train = np.zeros((epochs, 1))
+loss_test = np.zeros((epochs, 1))
 
 # 训练
 for epoch in range(epochs):
@@ -103,14 +105,38 @@ for epoch in range(epochs):
     print('Epoch: %04d, Training loss=%.8f' %
           (epoch + 1, loss.item()))
 
+    for batchidx, (x, _) in enumerate(testDataLoader):
+        # 编码和解码
+        encoded, decoded = autoencoder(x)
+        # 计算loss
+        test_loss = loss_func(decoded, x)
+
+    loss_test[epoch, 0] = test_loss.item()
+    print('Epoch: %04d, test_loss=%.8f' %
+          (epoch + 1, test_loss.item()))
+
+
+
 # 绘制loss曲线
 fig = plt.figure(figsize=(6, 3))
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+
+plt.ylim(0,0.08 )
 ax = plt.subplot(1, 1, 1)
 ax.grid()
 ax.plot(loss_train, color=[245 / 255, 124 / 255, 0 / 255], linestyle='-', linewidth=2)
-ax.set_xlabel('Epoches')
-ax.set_ylabel('Loss')
+ax.plot(loss_test, color='green', linestyle='-', linewidth=1)
+plt.title("Z_I", fontsize=15)
+ax.set_xlabel('Epoch',fontsize=15)
+ax.set_ylabel('Loss',fontsize=15)
+plt.legend(['train_loss','test_loss'], fontsize=15)
 plt.show()
+
+
+
+
+
 
 # 利用训练好的自编码器重构测试数据
 res, decodedTestdata = autoencoder(newtrain)
@@ -127,8 +153,8 @@ Out=[[0] for _ in range(len(out))]
 for l in range(0,len(out)):
     Out[l][0]=out[l]
 
-df=pd.DataFrame(Out)
-df.to_excel("../data/shiyan/ae_z_I14_22-12.xlsx",header=True,index=False,encoding="utf-8")
+# df=pd.DataFrame(Out)
+# df.to_excel("../data/shiyan/ae_z_I14_22-12.xlsx",header=True,index=False,encoding="utf-8")
 
 
 

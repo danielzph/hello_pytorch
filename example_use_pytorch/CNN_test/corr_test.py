@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # 读数据
-df=pd.read_csv("corr_data03.csv")
+df=pd.read_csv("corr_data02.csv")
 # df=pd.read_csv("f_data07.csv")
 
 # data_06=df[df.columns[5]]
@@ -15,15 +15,15 @@ df=pd.read_csv("corr_data03.csv")
 # result1 = np.corrcoef(data_06, data_07)
 # print(result1)
 
-data_f=df[df.columns[0:9]]
+data_f=df[df.columns[0:14]]
 data_f=data_f[:4356]
 result2 = data_f.corr()
 # result2=np.array(result2)
 print(result2)
 
 # 散点图
-sns.pairplot(data_f)
-plt.show()
+# sns.pairplot(data_f)
+# plt.show()
 
 #热力图
 figure, ax = plt.subplots(figsize=(12, 12))

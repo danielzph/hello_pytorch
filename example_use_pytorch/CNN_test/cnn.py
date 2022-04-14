@@ -216,13 +216,14 @@ R2_S=r2_score(var_y,out.detach().numpy())
 print("test mse:{} test mae:{} test EVRS:{} test R2_S:{}".format(mse, mae,EVRS,R2_S))
 
 
-
+plt.rcParams['font.sans-serif']=['SimHei','Times New Roman'] # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus']=False
 # plot
 plt.figure(figsize=(24,8))
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.plot(range(len(msel)), msel,c='red')
-plt.title("each eooch mse", fontsize=20)
+plt.title("每次eooch下的均方误差（MSE）", fontsize=20)
 plt.xlabel('epoch', fontsize=20)
 plt.ylabel('mse', fontsize=20)
 plt.show()
@@ -232,7 +233,7 @@ plt.figure(figsize=(24,8))
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.plot(range(len(mael)), mael,c='green')
-plt.title("each eooch mae", fontsize=20)
+plt.title("每次eooch下的平均绝对值误差（MAE）", fontsize=20)
 plt.xlabel('epoch', fontsize=20)
 plt.ylabel('mae', fontsize=20)
 plt.show()
@@ -243,10 +244,10 @@ plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.plot(range(len(lossl)), lossl,c='green')
 plt.plot(range(len(vallossl)), vallossl,c='red')
-plt.title("each eooch loss", fontsize=20)
+plt.title("每次eooch下的损失（loss）", fontsize=20)
 plt.xlabel('epoch', fontsize=20)
-plt.ylabel('loss', fontsize=20)
-plt.legend(['loss','val_loss'], fontsize=20)
+plt.ylabel('损失（loss）', fontsize=20)
+plt.legend(['训练集损失','验证集损失'], fontsize=20)
 plt.show()
 
 
